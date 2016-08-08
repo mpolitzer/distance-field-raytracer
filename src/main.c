@@ -85,8 +85,8 @@ int main(int argc, const char *argv[])
 			case SDL_MOUSEMOTION: {
 				int x, y;
 				if (SDL_GetMouseState(&x, &y)) {
-					_app.cam.phi   -= M_PI*ev.motion.xrel/720.0;
-					_app.cam.theta += M_PI*ev.motion.yrel/1280.0;
+					_app.cam.theta += M_PI*ev.motion.xrel/1280.0;
+					_app.cam.phi   -= M_PI*ev.motion.yrel/720.0;
 				}
 				break;
 			}
@@ -102,6 +102,7 @@ int main(int argc, const char *argv[])
 		tz_cam3_mkview(&_app.cam, &modelview);
 		tz_mat4_mul(&pvm, &_app.proj, &modelview);
 		tz_mat4_inverse(&i_pvm, &pvm);
+		tz_mat4_transpose(&pvm, &pvm);
 
 		glUniformMatrix4fv(0, 1, GL_TRUE, pvm.f);
 		glUniformMatrix4fv(1, 1, GL_TRUE, i_pvm.f);

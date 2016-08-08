@@ -2,7 +2,7 @@
 #extension GL_ARB_explicit_uniform_location : enable
 #extension GL_ARB_shading_language_420pack  : enable
 
-layout(location = 0) uniform mat4      u_pvm_mat;
+layout(location = 0) uniform mat4      u_t_pvm_mat;
 layout(location = 1) uniform mat4      u_i_pvm_mat;
 
 layout(location = 9) uniform float     u_slice;

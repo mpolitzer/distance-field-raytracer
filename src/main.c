@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "df.h"
+
 #define TZ_GFX_WINDOW_INLINE 1
 #include "tz/tz/gfx/window.h"
 
@@ -19,7 +21,7 @@
 #define VS RELPATH "main.vs"
 #define FS RELPATH "main.fs"
 
-#define N 128
+#define N 256
 float _d[N][N][N];
 
 struct app_info {
@@ -132,10 +134,6 @@ static GLuint create_df_texture(int w, int h, int d, float *p)
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//glTexSubImage3D(GL_TEXTURE_3D,
-	//		0, 0, 0, 0,
-	//		w, h, d, GL_RED,
-	//		GL_FLOAT, p);
 	glTexImage3D(GL_TEXTURE_3D, 0,
 			GL_RED,
 			w, h, d, 0,
@@ -162,11 +160,24 @@ static GLuint create_df_canvas()
 	glBufferData(GL_ARRAY_BUFFER, sizeof strip, strip,  GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 	glEnableVertexAttribArray(0);
-
 	return vao;
 }
 
-static void mk_sphere(int w, int h, int d, float *p)
+static void op_union(df *a, df *b, df *o)
+{
+}
+
+static void op_intersetcion(df *a, df *b, df *o)
+{
+}
+
+static void op_difference(df *a, df *b, df *o)
+{
+}
+
+static void is2df(int w, int h, int d, float *p, // df texture to be
+                  float cx, float cy, float cz,     // center
+                  float Mx, float My, float Mz)     // BB
 {
 	for (int k=0; k<d; ++k) {
 		for (int j=0; j<h; ++j) {
@@ -180,6 +191,35 @@ static void mk_sphere(int w, int h, int d, float *p)
 			}
 		}
 	}
+}
+
+static void primitive(
+		int w, int h, int d, float *p,
+		void *data, float (*f)(float x, float y, float z, void *data))
+{
+	for (int k=0; k<d; ++k) {
+		for (int j=0; j<h; ++j) {
+			for (int i=0; i<w; ++i) {
+				int index = k*N*N + j*N + i;
+				float x = i/(float)N - .5,
+				      y = j/(float)N - .5,
+				      z = k/(float)N - .5;
+				float r=.2f;
+				p[index] = sqrt(x*x + y*y + z*z)-r;
+			}
+		}
+	}
+}
+
+static float df_sphere(float x, float y, float z, void *data)
+{
+	return sqrt(x*x + y*y + z*z) - *(float *)data;
+}
+
+static void mk_sphere(int w, int h, int d, float *p)
+{
+	float r = .4;
+	primitive(w, h, d, p, &r, df_sphere);
 }
 
 void print_sphere()

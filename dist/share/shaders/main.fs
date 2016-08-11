@@ -14,16 +14,8 @@ in  vec3 f_ro; // ray origin
 
 out vec4 o_color;
 
-float vmax(vec2 v) {
-	return max(v.x, v.y);
-}
-
 float vmax(vec3 v) {
 	return max(max(v.x, v.y), v.z);
-}
-
-float vmax(vec4 v) {
-	return max(max(v.x, v.y), max(v.z, v.w));
 }
 
 float box(vec3 p, vec3 b) {
@@ -34,9 +26,10 @@ float box(vec3 p, vec3 b) {
 float scene(vec3 p) {
 	vec3 canvas = vec3(.5,.5,.5);
 	return max(box(p, canvas), texture(u_df, p+.5).r);
+	//return texture(u_df, p+.5).r;
 }
 
-float trace(vec3 ro, vec3 rd, int n) {
+float trace(vec3 ro, vec3 rd, int n, out float final) {
 	float d_=0, d=0.0;
 	for(int i=0; i<n; ++i, d += d_) {
 		vec3 s = ro + d * rd;
@@ -45,6 +38,7 @@ float trace(vec3 ro, vec3 rd, int n) {
 			break;
 		}
 	}
+	final = d_;
 	return d;
 }
 
@@ -61,15 +55,14 @@ vec3 normal(vec3 p) {
 void main() {
 	vec3 ro = (u_i_pvm_mat * vec4(f_ro, 1)).xyz;
 	vec3 rd = (u_t_pvm_mat * vec4(f_rd, 0)).xyz;
-	float d = trace(ro, rd, 32);
+	float f;
+	float d = trace(ro, rd, 32, f);
 	vec3  p = ro + d*rd;
 	vec3  n = normal(p);
-	//if (d < .9) {
-	//	o_color = vec4(n, 1);
-	//} else {
-	//	o_color = vec4(0,0,0, 0);
-	//}
 
-	//o_color = vec4(d, d, d, 1);
-	o_color = vec4(n, 1);
+	if (f > 0.01) {
+		o_color = vec4(0,0,0,1);
+	} else {
+		o_color = vec4(n, 1);
+	}
 }

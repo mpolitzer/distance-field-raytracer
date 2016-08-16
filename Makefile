@@ -1,7 +1,7 @@
 exec_projects=main
 
 main_binary  =dist/bin/main
-main_objects =main.o tz/tz/gfx/gl_core_3_3.o
+main_objects =main.o df.o vec3.o tz/tz/gfx/gl_core_3_3.o
 main_cc_flags=$$(pkg-config --cflags sdl2) -std=c99 -g -march=native
 main_ld_flags=$$(pkg-config --libs   gl sdl2) -lm
 

@@ -21,15 +21,14 @@
 #define VS RELPATH "main.vs"
 #define FS RELPATH "main.fs"
 
-#define N 256
+#define N 128
 float _d[N][N][N];
 
 struct app_info {
 	tz_window win;
 	tz_shader s;
 
-	// distance field
-	GLuint vao, tex;
+	GLuint vao, tex; // canvas and distance field in GPU
 
 	tz_mat4 proj, i_pvm;
 	tz_cam3 cam;
@@ -40,6 +39,7 @@ static GLuint create_df_texture(int w, int h, int d, float *p);
 static GLuint create_df_canvas();
 static void   mk_sphere(int w, int h, int d, float *p);
 static void   build_shaders(tz_shader *s);
+static void   print_sphere(int w, int h, int d, float *p);
 static void   print_help(const char *app_name);
 static void   abort_if(bool cond, const char *fmt, ...);
 
@@ -48,14 +48,66 @@ static void   abort_if(bool cond, const char *fmt, ...);
 #define key(ev, k) ((ev).key.keysym.sym == (k) && (ev).key.repeat == 0)
 int main(int argc, const char *argv[])
 {
+	static GLuint sphere_tex,
+		      box_tex,
+		      sphere_box_union_tex,
+		      sphere_box_intersection_tex,
+		      sphere_box_subtraction_tex;
+
+	df sphere, box, box2,
+	   sphere_box_union,
+	   sphere_box_intersection,
+	   sphere_box_subtraction;
+
+
 	abort_if(SDL_Init(SDL_INIT_EVERYTHING) != 0,
 			"SDL:%s\n", SDL_GetError());
 	abort_if(tz_window_create(&_app.win, 800, 800, false) == false,
 			"SDL:%s\n", SDL_GetError());
-
-	mk_sphere(N, N, N, (float *)(void *)_d);
 	_app.vao = create_df_canvas();
-	_app.tex = create_df_texture(N, N, N, (float *)(void *)_d);
+
+	df_build_sphere(&sphere, 0, 0, 0, .4);
+	sphere_tex = create_df_texture(
+	                sphere.n.x,
+	                sphere.n.y,
+	                sphere.n.z, sphere.p);
+
+	df_build_box(&box,
+			0.0, 0.0, 0.0,
+			1.1,  .1, 1.1);
+	df_build_box(&box2,
+			0.0, 0.0, 0.0,
+			0.9,  .1, 0.9);
+	box_tex = create_df_texture(
+	                box.n.x,
+	                box.n.y,
+	                box.n.z, box.p);
+
+	df_unite(&sphere_box_union, &box, &sphere);
+	sphere_box_union_tex = create_df_texture(
+	                sphere_box_union.n.x,
+	                sphere_box_union.n.y,
+	                sphere_box_union.n.z, sphere_box_union.p);
+
+	df_intersect(&sphere_box_intersection, &box, &sphere);
+	sphere_box_intersection_tex = create_df_texture(
+	                sphere_box_intersection.n.x,
+	                sphere_box_intersection.n.y,
+	                sphere_box_intersection.n.z, sphere_box_intersection.p);
+
+	df_subtract(&sphere_box_subtraction, &box2, &sphere);
+	sphere_box_subtraction_tex = create_df_texture(
+	                sphere_box_subtraction.n.x,
+	                sphere_box_subtraction.n.y,
+	                sphere_box_subtraction.n.z, sphere_box_subtraction.p);
+
+	//print_sphere(
+	//                box.n.x,
+	//                box.n.y,
+	//                box.n.z, box.p);
+
+	//mk_sphere(N, N, N, (float *)(void *)_d);
+	//_app.tex = create_df_texture(N, N, N, (float *)(void *)_d);
 
 	_app.cam.rho   = 3;
 	_app.cam.phi   = M_PI/2;
@@ -82,6 +134,13 @@ int main(int argc, const char *argv[])
 				if (key(ev, SDLK_w)) { _app.cam.z += .1; }
 				if (key(ev, SDLK_v)) { _app.cam.y -= .1; }
 				if (key(ev, SDLK_f)) { _app.cam.y += .1; }
+
+				if (key(ev, SDLK_1)) { glBindTexture(GL_TEXTURE_3D, sphere_tex); }
+				if (key(ev, SDLK_2)) { glBindTexture(GL_TEXTURE_3D, box_tex); }
+				if (key(ev, SDLK_3)) { glBindTexture(GL_TEXTURE_3D, sphere_box_union_tex); }
+				if (key(ev, SDLK_4)) { glBindTexture(GL_TEXTURE_3D, sphere_box_intersection_tex); }
+				if (key(ev, SDLK_5)) { glBindTexture(GL_TEXTURE_3D, sphere_box_subtraction_tex); }
+
 				break;
 			}
 			case SDL_MOUSEMOTION: {
@@ -163,36 +222,6 @@ static GLuint create_df_canvas()
 	return vao;
 }
 
-static void op_union(df *a, df *b, df *o)
-{
-}
-
-static void op_intersetcion(df *a, df *b, df *o)
-{
-}
-
-static void op_difference(df *a, df *b, df *o)
-{
-}
-
-static void is2df(int w, int h, int d, float *p, // df texture to be
-                  float cx, float cy, float cz,     // center
-                  float Mx, float My, float Mz)     // BB
-{
-	for (int k=0; k<d; ++k) {
-		for (int j=0; j<h; ++j) {
-			for (int i=0; i<w; ++i) {
-				int index = k*N*N + j*N + i;
-				float x = i/(float)N - .5,
-				      y = j/(float)N - .5,
-				      z = k/(float)N - .5;
-				float r=.2f;
-				p[index] = sqrt(x*x + y*y + z*z)-r;
-			}
-		}
-	}
-}
-
 static void primitive(
 		int w, int h, int d, float *p,
 		void *data, float (*f)(float x, float y, float z, void *data))
@@ -222,14 +251,16 @@ static void mk_sphere(int w, int h, int d, float *p)
 	primitive(w, h, d, p, &r, df_sphere);
 }
 
-void print_sphere()
+static void print_sphere(int w, int h, int d, float *p)
 {
-	for (int k=0; k<N; ++k) {
-		for (int j=0; j<N; ++j) {
-			for (int i=0; i<N; ++i) {
-				if (_d[k][j][i] > .2) { putchar('#'); continue; }
-				if (_d[k][j][i] > .1) { putchar('*'); continue; }
-				if (_d[k][j][i] >  0) { putchar('.'); continue; }
+	for (int k=0; k<d; ++k) {
+		for (int j=0; j<h; ++j) {
+			for (int i=0; i<w; ++i) {
+				int index = k*N*N + j*N + i;
+				float v = p[index];
+				if (v > .2) { putchar('#'); continue; }
+				if (v > .1) { putchar('*'); continue; }
+				if (v >  0) { putchar('.'); continue; }
 				putchar(' ');
 			}
 			putchar('\n');

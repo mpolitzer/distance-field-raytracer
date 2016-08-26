@@ -75,14 +75,14 @@ int main(int argc, const char *argv[])
 	df_build_box(&box,
 			0.0, 0.0, 0.0,
 			1.1,  .1, 1.1);
-	df_build_box(&box2,
-			0.0, 0.0, 0.0,
-			0.9,  .1, 0.9);
 	box_tex = create_df_texture(
 	                box.n.x,
 	                box.n.y,
 	                box.n.z, box.p);
 
+	df_build_box(&box2,
+			0.0, 0.0, 0.0,
+			0.9,  .1, 0.9);
 	df_unite(&sphere_box_union, &box, &sphere);
 	sphere_box_union_tex = create_df_texture(
 	                sphere_box_union.n.x,

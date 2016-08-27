@@ -48,13 +48,10 @@ static void   abort_if(bool cond, const char *fmt, ...);
 #define key(ev, k) ((ev).key.keysym.sym == (k) && (ev).key.repeat == 0)
 int main(int argc, const char *argv[])
 {
-	static GLuint sphere_tex,
-		      box_tex,
-		      sphere_box_union_tex,
-		      sphere_box_intersection_tex,
-		      sphere_box_subtraction_tex;
+	static GLuint tex[128];
+	static int    nxt=0;
 
-	df sphere, box, box2,
+	df sphere, box, box2, box_box2,
 	   sphere_box_union,
 	   sphere_box_intersection,
 	   sphere_box_subtraction;
@@ -67,7 +64,7 @@ int main(int argc, const char *argv[])
 	_app.vao = create_df_canvas();
 
 	df_build_sphere(&sphere, 0, 0, 0, .4);
-	sphere_tex = create_df_texture(
+	tex[nxt++] = create_df_texture(
 	                sphere.n.x,
 	                sphere.n.y,
 	                sphere.n.z, sphere.p);
@@ -75,31 +72,42 @@ int main(int argc, const char *argv[])
 	df_build_box(&box,
 			0.0, 0.0, 0.0,
 			1.1,  .1, 1.1);
-	box_tex = create_df_texture(
+	tex[nxt++] = create_df_texture(
 	                box.n.x,
 	                box.n.y,
 	                box.n.z, box.p);
 
 	df_build_box(&box2,
 			0.0, 0.0, 0.0,
-			0.9,  .1, 0.9);
-	df_unite(&sphere_box_union, &box, &sphere);
-	sphere_box_union_tex = create_df_texture(
-	                sphere_box_union.n.x,
-	                sphere_box_union.n.y,
-	                sphere_box_union.n.z, sphere_box_union.p);
+			0.1,  .5, 0.1);
+	tex[nxt++] = create_df_texture(
+	                box2.n.x,
+	                box2.n.y,
+	                box2.n.z, box2.p);
 
-	df_intersect(&sphere_box_intersection, &box, &sphere);
-	sphere_box_intersection_tex = create_df_texture(
-	                sphere_box_intersection.n.x,
-	                sphere_box_intersection.n.y,
-	                sphere_box_intersection.n.z, sphere_box_intersection.p);
+	df_unite_rounded(&box_box2, &box, &box2);
+	tex[nxt++] = create_df_texture(
+	                box_box2.n.x,
+	                box_box2.n.y,
+	                box_box2.n.z, box_box2.p);
 
-	df_subtract(&sphere_box_subtraction, &box2, &sphere);
-	sphere_box_subtraction_tex = create_df_texture(
-	                sphere_box_subtraction.n.x,
-	                sphere_box_subtraction.n.y,
-	                sphere_box_subtraction.n.z, sphere_box_subtraction.p);
+	//df_unite(&sphere_box_union, &box, &sphere);
+	//sphere_box_union_tex = create_df_texture(
+	//                sphere_box_union.n.x,
+	//                sphere_box_union.n.y,
+	//                sphere_box_union.n.z, sphere_box_union.p);
+
+	//df_intersect(&sphere_box_intersection, &box, &sphere);
+	//sphere_box_intersection_tex = create_df_texture(
+	//                sphere_box_intersection.n.x,
+	//                sphere_box_intersection.n.y,
+	//                sphere_box_intersection.n.z, sphere_box_intersection.p);
+
+	//df_subtract(&sphere_box_subtraction, &box2, &sphere);
+	//sphere_box_subtraction_tex = create_df_texture(
+	//                sphere_box_subtraction.n.x,
+	//                sphere_box_subtraction.n.y,
+	//                sphere_box_subtraction.n.z, sphere_box_subtraction.p);
 
 	//print_sphere(
 	//                box.n.x,
@@ -135,12 +143,21 @@ int main(int argc, const char *argv[])
 				if (key(ev, SDLK_v)) { _app.cam.y -= .1; }
 				if (key(ev, SDLK_f)) { _app.cam.y += .1; }
 
-				if (key(ev, SDLK_1)) { glBindTexture(GL_TEXTURE_3D, sphere_tex); }
-				if (key(ev, SDLK_2)) { glBindTexture(GL_TEXTURE_3D, box_tex); }
-				if (key(ev, SDLK_3)) { glBindTexture(GL_TEXTURE_3D, sphere_box_union_tex); }
-				if (key(ev, SDLK_4)) { glBindTexture(GL_TEXTURE_3D, sphere_box_intersection_tex); }
-				if (key(ev, SDLK_5)) { glBindTexture(GL_TEXTURE_3D, sphere_box_subtraction_tex); }
-
+				int i=0;
+				switch (ev.key.keysym.sym) {
+				case SDLK_9: i++;
+				case SDLK_8: i++;
+				case SDLK_7: i++;
+				case SDLK_6: i++;
+				case SDLK_5: i++;
+				case SDLK_4: i++;
+				case SDLK_3: i++;
+				case SDLK_2: i++;
+				case SDLK_1: i++;
+				case SDLK_0:
+					glBindTexture(GL_TEXTURE_3D, tex[i]);
+					printf("showing object: %d\n", i);
+				}
 				break;
 			}
 			case SDL_MOUSEMOTION: {
@@ -174,7 +191,7 @@ int main(int argc, const char *argv[])
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 		tz_window_flip(&_app.win);
-		SDL_Delay(1); // don't hot the CPU
+		SDL_Delay(1); // don't hog the CPU
 	}
 
 cleanup:

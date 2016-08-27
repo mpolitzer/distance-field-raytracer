@@ -37,7 +37,7 @@ float combine(float u, float v, float r) {
 }
 
 float scene(vec3 p) {
-	vec3 canvas = vec3(.5,.5,.5);
+	vec3 canvas = vec3(.5, .5, .5);
 	return max(box(p, canvas), texture(u_df, p+.5).r);
 }
 
@@ -95,7 +95,7 @@ float sobel_kernel_z[3][3][3] = {
 
 vec3 sobel_normalization(vec3 p)
 {
-	float e = 1./128;
+	float e = 1./64;
 	vec3 n = vec3(0);
 
 	for (int x=-1; x<=1; ++x) {
@@ -114,7 +114,7 @@ vec3 sobel_normalization(vec3 p)
 
 /* sample around p to calculate the normal */
 vec3 normal(vec3 p) {
-	float e = 1./128;
+	float e = 1./64;
 	vec3 n = vec3(
 			scene(p+vec3(e,0,0))-scene(p-vec3(e,0,0)),
 			scene(p+vec3(0,e,0))-scene(p-vec3(0,e,0)),

@@ -22,13 +22,14 @@ void df_build(df *o,
               vec3 center, vec3 half, // AABB
               is_gen fn, void *arg);  // implicit surface generator
 
-float df_value_at(const df *i, float x, float y, float z);
+float df_value_at     (const df *i, float x, float y, float z);
 
-void df_build_sphere(df *o, float x, float y, float z, float r);
-void df_build_box   (df *o, float x, float y, float z,
-                            float w, float h, float d);
-void df_unite    (df *o, const df *a, const df *b);
-void df_intersect(df *o, const df *a, const df *b);
-void df_subtract (df *o, const df *a, const df *b);
+void df_build_sphere  (df *o, float x, float y, float z, float r);
+void df_build_box     (df *o, float x, float y, float z, float w, float h, float d);
+void df_unite         (df *o, const df *a, const df *b);
+void df_unite_rounded (df *o, const df *a, const df *b);
+void df_unite_chamfer (df *o, const df *a, const df *b);
+void df_intersect     (df *o, const df *a, const df *b);
+void df_subtract      (df *o, const df *a, const df *b);
 
 #endif /* DF_H */

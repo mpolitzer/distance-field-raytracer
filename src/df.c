@@ -122,6 +122,57 @@ void df_unite(df *o, const df *a, const df *b)
 	         gen_df_unite, &pair);
 }
 
+static float gen_df_unite_chamfer(float x, float y, float z, void *arg)
+{
+	struct df_pair_t *pair = (struct df_pair_t *)arg;
+	float a = df_value_at(pair->a, x, y, z),
+	      b = df_value_at(pair->b, x, y, z),
+	      r = 0.05;
+	return fmin(fmin(a, b), (a - r + b)*sqrt(0.5));
+}
+
+void df_unite_chamfer(df *o, const df *a, const df *b)
+{
+	struct df_pair_t pair = { a, b };
+	int   sq = 128;
+	ivec3 n  =ivec3_make(sq, sq, sq);
+
+	vec3 center = vec3_divs(vec3_add(a->center, b->center), 2);
+	vec3 half   = vec3_max(a->half, b->half);
+
+	df_build(o, n, malloc(sizeof(float)*n.x*n.y*n.z),
+	         center, half,
+	         gen_df_unite_chamfer, &pair);
+}
+
+static float gen_df_unite_rounded(float x, float y, float z, void *arg)
+{
+	struct df_pair_t *pair = (struct df_pair_t *)arg;
+
+	float r = 0.1;
+	float a = df_value_at(pair->a, x, y, z),
+	      b = df_value_at(pair->b, x, y, z);
+
+	float ux= fmax(r-a, 0);
+	float uy= fmax(r-b, 0);
+
+	return fmax(r, fmin(a,b)) - sqrtf(ux*ux + uy*uy);
+}
+
+void df_unite_rounded(df *o, const df *a, const df *b)
+{
+	struct df_pair_t pair = { a, b };
+	int   sq = 128;
+	ivec3 n  =ivec3_make(sq, sq, sq);
+
+	vec3 center = vec3_divs(vec3_add(a->center, b->center), 2);
+	vec3 half   = vec3_max(a->half, b->half);
+
+	df_build(o, n, malloc(sizeof(float)*n.x*n.y*n.z),
+	         center, half,
+	         gen_df_unite_rounded, &pair);
+}
+
 static float gen_df_intersect(float x, float y, float z, void *arg)
 {
 	struct df_pair_t *pair = (struct df_pair_t *)arg;
